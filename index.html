@@ -1116,6 +1116,99 @@ table.grid tr:nth-child(even) td { background: var(--card); }
   .card h4 { font-size: 16px; }
   .agenda-row { padding: 10px 12px; }
 }
+
+/* ================================================================
+   PRINT — every slide becomes a 16:9 page in the saved PDF
+   ================================================================ */
+
+@media print {
+  @page {
+    size: 13.333in 7.5in;   /* 1280×720 px @ 96 dpi — 16:9 */
+    margin: 0;
+  }
+
+  /* turn the dark canvas off; let pages stand alone */
+  html, body {
+    background: white !important;
+    overflow: visible !important;
+    width: auto !important;
+    height: auto !important;
+  }
+
+  /* hide all UI chrome */
+  .controls, .help, .progress { display: none !important; }
+
+  /* unwrap the stage / zoom-wrap so slides flow as pages */
+  .stage {
+    position: static !important;
+    inset: auto !important;
+    background: white !important;
+    display: block !important;
+    height: auto !important;
+    padding: 0 !important;
+  }
+  .zoom-wrap {
+    display: block !important;
+    transform: none !important;
+    width: 100% !important;
+    height: auto !important;
+  }
+
+  /* every slide → its own physical page at 16:9 */
+  .slide {
+    width: 13.333in !important;
+    height: 7.5in !important;
+    aspect-ratio: auto !important;
+    position: relative !important;
+    inset: auto !important;
+    margin: 0 !important;
+    opacity: 1 !important;
+    transform: none !important;
+    pointer-events: auto !important;
+    transition: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    overflow: hidden !important;
+    page-break-after: always;
+    page-break-inside: avoid;
+    break-after: page;
+    break-inside: avoid;
+    display: block !important;
+  }
+  .slide:last-child { page-break-after: auto; break-after: auto; }
+
+  /* preserve every colour & gradient */
+  *,
+  *::before,
+  *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* force the desktop layout in print regardless of the device's screen size */
+  .body { padding: 56px 72px 72px 72px !important; overflow: hidden !important; }
+  .title { font-size: 56px !important; }
+  .subtitle { font-size: 22px !important; }
+  .title-slide h1, .closing h1 { font-size: 84px !important; }
+  .title-slide .sub { font-size: 36px !important; }
+  .divider h2 { font-size: 96px !important; }
+  .divider .sub { font-size: 26px !important; }
+
+  .cards.cols-2 { grid-template-columns: repeat(2, 1fr) !important; }
+  .cards.cols-3 { grid-template-columns: repeat(3, 1fr) !important; }
+  .cards.cols-4 { grid-template-columns: repeat(4, 1fr) !important; }
+  .two-col, .session-grid { grid-template-columns: 1fr 1fr !important; }
+  .speaker-grid { grid-template-columns: 1.1fr 1fr !important; }
+  .steps { grid-template-columns: repeat(5, 1fr) !important; }
+
+  /* pyramid widths back to original (the mobile rule had width:100%) */
+  .tier { width: auto !important; }
+
+  /* anchors: drop the link underline so PDF looks like the screen */
+  a { border-bottom: none !important; color: inherit !important; }
+  .theme-dark a, .theme-accent a { color: inherit !important; }
+}
 </style>
 <script>
 /* Defined synchronously in <head> so the inline onerror=brandFail(this)
@@ -2648,7 +2741,8 @@ ofac/downloads/sdn.csv -o sdn.csv
   <button id="btn-next" title="Next (→)"><i data-lucide="chevron-right" class="icon"></i></button>
   <button id="btn-last" title="Last (End)"><i data-lucide="chevrons-right" class="icon"></i></button>
   <span class="sep"></span>
-  <button id="btn-fs" title="Fullscreen (F)"><i data-lucide="maximize" class="icon"></i></button>
+  <button id="btn-pdf" title="Download PDF (P)"><i data-lucide="file-down" class="icon"></i></button>
+  <button id="btn-fs"  title="Fullscreen (F)"><i data-lucide="maximize" class="icon"></i></button>
 </div>
 
 <div class="help" id="help">
@@ -2662,6 +2756,7 @@ ofac/downloads/sdn.csv -o sdn.csv
     <div class="row"><span>Zoom out</span><span class="keys">−</span></div>
     <div class="row"><span>Reset zoom</span><span class="keys">0</span></div>
     <div class="row"><span>Fullscreen</span><span class="keys">F</span></div>
+    <div class="row"><span>Download PDF</span><span class="keys">P</span></div>
     <div class="row"><span>Toggle this help</span><span class="keys">?</span></div>
     <div class="row"><span>Close overlay</span><span class="keys">Esc</span></div>
   </div>
@@ -2723,6 +2818,14 @@ ofac/downloads/sdn.csv -o sdn.csv
     if (!document.fullscreenElement) document.documentElement.requestFullscreen();
     else document.exitFullscreen();
   });
+  bind('btn-pdf', () => {
+    /* close help if open, exit fullscreen so the browser print dialog appears
+       reliably, then trigger native print → user picks "Save as PDF" */
+    help.classList.remove('open');
+    if (document.fullscreenElement) document.exitFullscreen();
+    /* let layout settle for one frame */
+    requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
+  });
   help.addEventListener('click', e => { if (e.target === help) help.classList.remove('open'); });
 
   /* ======== keyboard ======== */
@@ -2742,6 +2845,12 @@ ofac/downloads/sdn.csv -o sdn.csv
       case '-': case '_': zoomOut(); e.preventDefault(); break;
       case '0': zoomReset(); e.preventDefault(); break;
       case '?': case '/': help.classList.toggle('open'); e.preventDefault(); break;
+      case 'p': case 'P':
+        help.classList.remove('open');
+        if (document.fullscreenElement) document.exitFullscreen();
+        requestAnimationFrame(() => requestAnimationFrame(() => window.print()));
+        e.preventDefault();
+        break;
       case 'Escape': help.classList.remove('open'); break;
     }
   });
