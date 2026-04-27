@@ -865,6 +865,40 @@ table.grid tr:nth-child(even) td { background: var(--card); }
   .steps { grid-template-columns: 1fr 1fr; }
 }
 </style>
+<script>
+/* Defined synchronously in <head> so the inline onerror=brandFail(this)
+   handlers on <img> elements are guaranteed to find this function the
+   moment their network requests fail. */
+function brandFail(img) {
+  /* tier 2: try favicon (or any data-fallback URL) once */
+  if (img.dataset.fallback && !img.dataset.tier2) {
+    img.dataset.tier2 = '1';
+    img.src = img.dataset.fallback;
+    return;
+  }
+  /* tier 3: replace the <img> with a styled initials box */
+  var name = img.dataset.name || img.alt || '?';
+  var initials = name
+    .replace(/[^A-Za-z0-9 ]/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean)
+    .map(function (w) { return w[0]; })
+    .join('')
+    .slice(0, 3)
+    .toUpperCase() || '?';
+  var div = document.createElement('div');
+  /* drop any filter classes; brand-fallback overrides anyway */
+  var cls = (img.className || '')
+    .split(/\s+/)
+    .filter(function (c) { return c && c !== 'brand-mono' && c !== 'brand-on-dark'; })
+    .join(' ');
+  div.className = cls + ' brand-fallback';
+  div.textContent = initials;
+  div.title = name;
+  if (img.parentNode) img.parentNode.replaceChild(div, img);
+}
+window.brandFail = brandFail;
+</script>
 </head>
 <body>
 <div class="progress"><div class="bar" id="progress-bar"></div></div>
@@ -2383,35 +2417,6 @@ ofac/downloads/sdn.csv -o sdn.csv
 
 <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
 <script>
-/* ======== brand image 3-tier fallback ======== */
-function brandFail(img) {
-  // tier 2: try favicon if data-fallback present and not yet tried
-  if (img.dataset.fallback && !img.dataset.tier2) {
-    img.dataset.tier2 = '1';
-    img.src = img.dataset.fallback;
-    return;
-  }
-  // tier 3: replace with initials box
-  const name = img.dataset.name || img.alt || '?';
-  const initials = name
-    .replace(/[^A-Za-z0-9 ]/g, ' ')
-    .split(/\s+/)
-    .filter(Boolean)
-    .map(w => w[0])
-    .join('')
-    .slice(0, 3)
-    .toUpperCase();
-  const div = document.createElement('div');
-  div.className = img.className + ' brand-fallback';
-  div.textContent = initials || '?';
-  div.title = name;
-  // preserve sizing
-  if (img.style.width)  div.style.width  = img.style.width;
-  if (img.style.height) div.style.height = img.style.height;
-  if (img.parentNode) img.replaceWith(div);
-}
-window.brandFail = brandFail;
-
 (function () {
   const slides = Array.from(document.querySelectorAll('.slide'));
   const total = slides.length;
