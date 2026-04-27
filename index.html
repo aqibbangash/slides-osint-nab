@@ -111,6 +111,14 @@ a:hover { color: var(--accent-deep); }
 .slide.theme-dark { background: var(--dark); color: #F5F5F5; }
 .slide.theme-accent { background: var(--accent); color: white; }
 
+/* .frame is the actual 16:9 design surface inside .slide. On screen it just
+   fills .slide; on print it becomes a letterboxed centered box on the page. */
+.frame {
+  position: absolute;
+  inset: 0;
+  display: block;
+}
+
 /* ================================ body / padding ================================ */
 .body {
   position: absolute;
@@ -1118,27 +1126,33 @@ table.grid tr:nth-child(even) td { background: var(--card); }
 }
 
 /* ================================================================
-   PRINT — every slide becomes a 16:9 page in the saved PDF
+   PRINT — each slide becomes one page; slide design is letterboxed
+   centered on whatever paper the user picks (A4, Letter, Custom...)
    ================================================================ */
 
 @media print {
   @page {
-    size: 13.333in 7.5in;   /* 1280×720 px @ 96 dpi — 16:9 */
+    /* Hint to the browser: 16:9 paper. If the user's print dialog overrides
+       this with A4 / Letter, the letterbox layout below still produces a
+       perfectly-centered slide with empty space distributed top+bottom OR
+       left+right (whichever orientation the user picked). */
+    size: 13.333in 7.5in;
     margin: 0;
   }
 
-  /* turn the dark canvas off; let pages stand alone */
   html, body {
     background: white !important;
     overflow: visible !important;
     width: auto !important;
     height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
-  /* hide all UI chrome */
+  /* hide all UI */
   .controls, .help, .progress { display: none !important; }
 
-  /* unwrap the stage / zoom-wrap so slides flow as pages */
+  /* unwrap stage / zoom-wrap so slides flow as physical pages */
   .stage {
     position: static !important;
     inset: auto !important;
@@ -1154,14 +1168,15 @@ table.grid tr:nth-child(even) td { background: var(--card); }
     height: auto !important;
   }
 
-  /* every slide → its own physical page at 16:9 */
+  /* Each .slide = one full page. */
   .slide {
-    width: 13.333in !important;
-    height: 7.5in !important;
+    width: 100vw !important;
+    height: 100vh !important;
     aspect-ratio: auto !important;
     position: relative !important;
     inset: auto !important;
     margin: 0 !important;
+    padding: 0 !important;
     opacity: 1 !important;
     transform: none !important;
     pointer-events: auto !important;
@@ -1174,10 +1189,43 @@ table.grid tr:nth-child(even) td { background: var(--card); }
     break-after: page;
     break-inside: avoid;
     display: block !important;
+
+    /* Letterbox area is white. The slide's own design colour goes onto .frame. */
+    background: white !important;
   }
   .slide:last-child { page-break-after: auto; break-after: auto; }
 
-  /* preserve every colour & gradient */
+  /* The .frame is the slide's actual 16:9 design surface. We centre it on the
+     page using the classic absolute + inset 0 + margin auto trick (works in
+     every browser AND weasyprint, no flex required). The width / height pick
+     the smaller axis so the 16:9 box always fits.
+
+     If the page already happens to be 16:9 (because @page worked), the frame
+     fills it exactly. If the user printed to A4 / Letter portrait, the frame
+     becomes a centred letterbox with white space top + bottom. */
+  /* The classic absolute-with-margin-auto centering technique: with top, right,
+     bottom, left all = 0 and margin: auto, an absolute box centers itself in
+     its containing block. With max-width / max-height capping the dimensions,
+     the box stays at 16:9 and the leftover space becomes letterbox margin. */
+  .slide > .frame {
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    margin: auto !important;
+    max-width:  calc(100vh * 16 / 9) !important;
+    max-height: calc(100vw * 9 / 16) !important;
+    overflow: hidden !important;
+    box-shadow: none !important;
+  }
+
+  /* Move the slide's design background onto its frame in print. */
+  .slide:not(.theme-dark):not(.theme-accent) > .frame { background: var(--bg) !important; }
+  .slide.theme-dark   > .frame { background: var(--dark)   !important; color: #F5F5F5 !important; }
+  .slide.theme-accent > .frame { background: var(--accent) !important; color: white   !important; }
+
+  /* preserve every colour, gradient and image */
   *,
   *::before,
   *::after {
@@ -1205,7 +1253,7 @@ table.grid tr:nth-child(even) td { background: var(--card); }
   /* pyramid widths back to original (the mobile rule had width:100%) */
   .tier { width: auto !important; }
 
-  /* anchors: drop the link underline so PDF looks like the screen */
+  /* drop link underlines so the PDF visually matches the screen */
   a { border-bottom: none !important; color: inherit !important; }
   .theme-dark a, .theme-accent a { color: inherit !important; }
 }
@@ -1251,8 +1299,7 @@ window.brandFail = brandFail;
 <div class="stage">
   <div class="zoom-wrap" id="zoom-wrap">
     
-<section class="slide theme-dark">
-  <div class="title-slide">
+<section class="slide theme-dark"><div class="frame"><div class="title-slide">
     <div class="org"><i data-lucide="landmark" class="icon"></i> PAKISTAN ANTI-CORRUPTION ACADEMY · NAB HQ ISLAMABAD</div>
     <h1>Open-Source<br>Intelligence.</h1>
     <div class="sub">Utilization in Money Laundering &amp; NAO cases.</div>
@@ -1262,12 +1309,10 @@ window.brandFail = brandFail;
     <div class="role">Certified OSINT Master Trainer · CEO, Intelligence X One · CTO, Tech Net Group</div>
     <div class="date">Tuesday, 28 April 2026 · 10:00 – 13:15</div>
   </div>
-  <div class="footer"><span>Opening</span><span class="pageno">1 / 67</span></div>
-</section>
+  <div class="footer"><span>Opening</span><span class="pageno">1 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>WHO IS IN THE ROOM</p><h2 class="title">About today's speaker.</h2><div class="subtitle">12+ years building enterprise software for the world's largest organisations — and applying that to intelligence-driven investigations.</div>
     <div class="speaker-grid">
       <div class="speaker-bio">
@@ -1301,12 +1346,10 @@ window.brandFail = brandFail;
       </div>
     </div>
   </div>
-  <div class="footer"><span>Opening</span><span class="pageno">2 / 67</span></div>
-</section>
+  <div class="footer"><span>Opening</span><span class="pageno">2 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>28 APRIL 2026</p><h2 class="title">Today's program.</h2><div class="subtitle">Two ninety-minute sessions — concept first, then keyboard.</div>
     <div class="session-grid">
       <div class="session-card a">
@@ -1337,12 +1380,10 @@ window.brandFail = brandFail;
       </div>
     </div>
   </div>
-  <div class="footer"><span>Opening</span><span class="pageno">3 / 67</span></div>
-</section>
+  <div class="footer"><span>Opening</span><span class="pageno">3 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>10:00 – 11:30</p><h2 class="title">Session 1 agenda.</h2>
     <div class="agenda">
       <div class="agenda-row"><div><i data-lucide="search" class="icon"></i></div><div class="time">10:00 – 10:20</div><div class="topic">Introduction to OSINT — definition, disciplines, the cycle</div></div>
@@ -1352,23 +1393,19 @@ window.brandFail = brandFail;
       <div class="agenda-row"><div><i data-lucide="help-circle" class="icon"></i></div><div class="time">11:20 – 11:30</div><div class="topic">Limits, pitfalls, Q&amp;A</div></div>
     </div>
   </div>
-  <div class="footer"><span>Opening</span><span class="pageno">4 / 67</span></div>
-</section>
+  <div class="footer"><span>Opening</span><span class="pageno">4 / 67</span></div></div></section>
 
 
-<section class="slide theme-dark">
-  <div class="divider">
+<section class="slide theme-dark"><div class="frame"><div class="divider">
     <div class="module"><i data-lucide="search" class="icon icon-lg"></i> MODULE 01</div>
     <h2>Introduction<br>to OSINT.</h2>
     <div class="sub">From raw public information to actionable intelligence.</div>
     <div class="preview-tags"><span class="tag">DEFINITION</span><span class="tag">DISCIPLINES</span><span class="tag">THE CYCLE</span><span class="tag">RELIABILITY</span><span class="tag">LEGAL</span><span class="tag">OPSEC</span></div>
   </div>
-  <div class="footer"><span>Module 1 · Introduction to OSINT</span><span class="pageno">5 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 1 · Introduction to OSINT</span><span class="pageno">5 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>STARTING IN PLAIN ENGLISH</p><h2 class="title">What is OSINT?</h2><div class="subtitle">A craft — not a tool. Public information, collected with discipline, reasoned into evidence.</div>
     <div class="card accent" style="margin-bottom:24px;">
       <i data-lucide="quote" class="icon icon-lg"></i>
@@ -1392,12 +1429,10 @@ window.brandFail = brandFail;
       </div>
     </div>
   </div>
-  <div class="footer"><span>Module 1 · Introduction to OSINT</span><span class="pageno">6 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 1 · Introduction to OSINT</span><span class="pageno">6 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>WHERE THE TERM COMES FROM</p><h2 class="title">A working definition.</h2><div class="subtitle">The 2006 US National Defense Authorization Act gave OSINT its formal definition. NATO adopted the same framing.</div>
     <div class="card dark" style="margin-bottom:24px;">
       <i data-lucide="quote" class="icon icon-lg icon-accent"></i>
@@ -1422,12 +1457,10 @@ window.brandFail = brandFail;
       </div>
     </div>
   </div>
-  <div class="footer"><span>Module 1 · Introduction to OSINT</span><span class="pageno">7 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 1 · Introduction to OSINT</span><span class="pageno">7 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>THE "INTS"</p><h2 class="title">OSINT among the disciplines.</h2>
     <div class="cards cols-3" style="flex:1;"><div class="card "><i data-lucide="users" class="icon icon-lg"></i><h4 style="font-size:28px;;">HUMINT</h4><div style="color:var(--mute);font-style:italic;font-size:14px;font-weight:600;">Human sources</div><p>Informants, interviews, undercover operations.</p></div><div class="card "><i data-lucide="radio" class="icon icon-lg"></i><h4 style="font-size:28px;;">SIGINT</h4><div style="color:var(--mute);font-style:italic;font-size:14px;font-weight:600;">Signals</div><p>Communications and electronic intercepts.</p></div><div class="card "><i data-lucide="image" class="icon icon-lg"></i><h4 style="font-size:28px;;">IMINT</h4><div style="color:var(--mute);font-style:italic;font-size:14px;font-weight:600;">Imagery</div><p>Satellite, aerial, drone imagery.</p></div><div class="card "><i data-lucide="map" class="icon icon-lg"></i><h4 style="font-size:28px;;">GEOINT</h4><div style="color:var(--mute);font-style:italic;font-size:14px;font-weight:600;">Geospatial</div><p>Location-based reasoning &amp; mapping.</p></div><div class="card "><i data-lucide="activity" class="icon icon-lg"></i><h4 style="font-size:28px;;">MASINT</h4><div style="color:var(--mute);font-style:italic;font-size:14px;font-weight:600;">Measurement</div><p>Radar, acoustic, nuclear, chemical signatures.</p></div><div class="card accent"><i data-lucide="search" class="icon icon-lg"></i><h4 style="font-size:28px;color:var(--accent-deep);">OSINT</h4><div style="color:var(--mute);font-style:italic;font-size:14px;font-weight:600;">Open source</div><p>Public data — the subject of today.</p></div></div>
     <div class="callout tip" style="margin-top:18px;">
@@ -1435,12 +1468,10 @@ window.brandFail = brandFail;
       <div>In a NAB investigation you will usually <strong>lead with OSINT</strong> — it is lawful, quick, and reveals leads the other disciplines then confirm.</div>
     </div>
   </div>
-  <div class="footer"><span>Module 1 · Introduction to OSINT</span><span class="pageno">8 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 1 · Introduction to OSINT</span><span class="pageno">8 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>SURFACE · DEEP · DARK</p><h2 class="title">Open source ≠ open access.</h2><div class="subtitle">Most useful OSINT for a corruption case lives in the deep web — public, but unindexed.</div>
     <div class="pyramid">
       <div class="tier" style="background:#3A6E96;width:55%;">
@@ -1457,12 +1488,10 @@ window.brandFail = brandFail;
       </div>
     </div>
   </div>
-  <div class="footer"><span>Module 1 · Introduction to OSINT</span><span class="pageno">9 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 1 · Introduction to OSINT</span><span class="pageno">9 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>A REPEATABLE DISCIPLINE</p><h2 class="title">The OSINT cycle.</h2><div class="subtitle">Five stages. Iterative — every analysis raises new questions that feed the next plan.</div>
     <div class="steps"><div class="step"><div class="num"><i data-lucide="compass" class="icon"></i>01</div><div class="label">PLAN</div><div class="desc">Define the question (PIR). Who, what, where, by when.</div></div><div class="step"><div class="num"><i data-lucide="download" class="icon"></i>02</div><div class="label">COLLECT</div><div class="desc">Gather from sources mapped to the question. Preserve originals.</div></div><div class="step"><div class="num"><i data-lucide="filter" class="icon"></i>03</div><div class="label">PROCESS</div><div class="desc">De-duplicate, translate, extract, structure into entities &amp; events.</div></div><div class="step"><div class="num"><i data-lucide="git-merge" class="icon"></i>04</div><div class="label">ANALYZE</div><div class="desc">Corroborate, connect, interpret. Write with evidence.</div></div><div class="step"><div class="num"><i data-lucide="send" class="icon"></i>05</div><div class="label">DISSEMINATE</div><div class="desc">Deliver to the decision-maker in usable form. Close the loop.</div></div></div>
     <div class="callout accent" style="margin-top:24px;">
@@ -1470,12 +1499,10 @@ window.brandFail = brandFail;
       <div><strong>The PIR template:</strong> Subject · Question · Decision · Indicators · Boundary · Deadline. Six fields up front prevents 80% of wasted-effort failures.</div>
     </div>
   </div>
-  <div class="footer"><span>Module 1 · Introduction to OSINT</span><span class="pageno">10 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 1 · Introduction to OSINT</span><span class="pageno">10 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>HOW NATO &amp; INTEL COMMUNITIES GRADE EVIDENCE</p><h2 class="title">The Admiralty Code.</h2><div class="subtitle">A 6×6 grid: source reliability × information credibility. Record both for every artefact.</div>
     <div class="two-col">
       <div class="col">
@@ -1496,12 +1523,10 @@ window.brandFail = brandFail;
       <div><strong>Example:</strong> A <a href="https://twitter.com" target="_blank" rel="noopener">Twitter</a> post from a verified journalist citing a court document → <strong style="color:var(--accent);">B-2</strong>. An anonymous forum claim with no corroboration → <strong style="color:var(--red);">F-6</strong>. Court submission usually requires at least two independent A2 / B2 findings.</div>
     </div>
   </div>
-  <div class="footer"><span>Module 1 · Introduction to OSINT</span><span class="pageno">11 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 1 · Introduction to OSINT</span><span class="pageno">11 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>PAKISTAN CONTEXT</p><h2 class="title">Legal &amp; ethical boundaries.</h2>
     <div class="kv"><div class="k"><i data-lucide="gavel" class="icon"></i>NAO 1999</div><div class="v">Empowers NAB to investigate wilful default and corruption. §27 enables information collection from any source — squarely covers OSINT.</div></div><div class="kv"><div class="k"><i data-lucide="banknote" class="icon"></i>AMLA 2010 (as amended)</div><div class="v">Anti-Money Laundering Act. §7 enables FMU access to public &amp; reporting-entity data. Covers predicate offences and STR review.</div></div><div class="kv"><div class="k"><i data-lucide="shield-alert" class="icon"></i>PECA 2016</div><div class="v">Prevention of Electronic Crimes Act. §3 (unauthorised access), §29–32 (data privacy). OSINT must stay on the public-and-lawfully-accessed side.</div></div><div class="kv"><div class="k"><i data-lucide="scroll" class="icon"></i>Investigation Act 2022</div><div class="v">Federal investigation framework. Chain-of-custody and digital-evidence handling baseline.</div></div><div class="kv"><div class="k"><i data-lucide="book-marked" class="icon"></i>Qanun-e-Shahadat 1984</div><div class="v">Evidence law. <a href="https://pakistanlawsite.com" target="_blank" rel="noopener">Article 164</a> permits electronic evidence with integrity safeguards (hashing, chain of custody).</div></div>
     <div class="callout warn" style="margin-top:14px;">
@@ -1509,12 +1534,10 @@ window.brandFail = brandFail;
       <div><strong>Golden rule:</strong> if you have to bypass a technical or legal control to get it — it is <em>not</em> OSINT.</div>
     </div>
   </div>
-  <div class="footer"><span>Module 1 · Introduction to OSINT</span><span class="pageno">12 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 1 · Introduction to OSINT</span><span class="pageno">12 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>WHY DISCIPLINE PROTECTS THE CASE</p><h2 class="title">OPSEC for investigators.</h2><div class="subtitle">Every visit from a government computer risks tipping the target — and contaminating the case.</div>
     <div class="cards cols-3 flex-1">
       <div class="card" style="border-top:4px solid var(--red);"><i data-lucide="fingerprint" class="icon"></i><h4>Attribution</h4><p>Target sees your IP, browser fingerprint, or logged-in account.</p></div><div class="card" style="border-top:4px solid var(--red);"><i data-lucide="cookie" class="icon"></i><h4>Contamination</h4><p>Browser cookies merge evidence with your personal accounts.</p></div><div class="card" style="border-top:4px solid var(--red);"><i data-lucide="bug" class="icon"></i><h4>Malware</h4><p>Target sites and leaked dumps are often booby-trapped.</p></div><div class="card" style="border-top:4px solid var(--red);"><i data-lucide="link-2" class="icon"></i><h4>Pivoting giveaway</h4><p>Same persona across platforms links accounts.</p></div><div class="card" style="border-top:4px solid var(--red);"><i data-lucide="scale" class="icon"></i><h4>Legal exposure</h4><p>Impersonation or entrapment can taint admissibility.</p></div><div class="card" style="border-top:4px solid var(--red);"><i data-lucide="alert-octagon" class="icon"></i><h4>Leaks</h4><p>Bookmarks, screenshots and notes leave traces on shared hosts.</p></div>
@@ -1524,23 +1547,19 @@ window.brandFail = brandFail;
       <div><strong>Mitigations:</strong> isolated VM · dedicated research browser · non-attributable network · sockpuppet hygiene · per-case evidence storage.</div>
     </div>
   </div>
-  <div class="footer"><span>Module 1 · Introduction to OSINT</span><span class="pageno">13 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 1 · Introduction to OSINT</span><span class="pageno">13 / 67</span></div></div></section>
 
 
-<section class="slide theme-dark">
-  <div class="divider">
+<section class="slide theme-dark"><div class="frame"><div class="divider">
     <div class="module"><i data-lucide="target" class="icon icon-lg"></i> MODULE 02</div>
     <h2>OSINT in ML &amp;<br>NAO cases.</h2>
     <div class="sub">Where open-source intelligence actually earns its keep.</div>
     <div class="preview-tags"><span class="tag">WHY OSINT</span><span class="tag">FATF TYPOLOGIES</span><span class="tag">BENEFICIAL OWNERSHIP</span><span class="tag">LIFESTYLE</span><span class="tag">INTL TRAILS</span><span class="tag">CRYPTO ML</span></div>
   </div>
-  <div class="footer"><span>Module 2 · OSINT in ML / NAO Investigations</span><span class="pageno">14 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 2 · OSINT in ML / NAO Investigations</span><span class="pageno">14 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>THE INVESTIGATOR'S FORCE-MULTIPLIER</p><h2 class="title">Why OSINT for corruption &amp; ML cases.</h2>
     <div class="cards cols-3 flex-1">
       <div class="card gold-bar"><i data-lucide="zap" class="icon icon-lg"></i><h4>Speed</h4><p>Leads in hours, not months. Preliminary assessment before MLAT / bank requests.</p></div><div class="card gold-bar"><i data-lucide="wallet" class="icon icon-lg"></i><h4>Cost</h4><p>No court order required to read what is public. Budgets stretch further.</p></div><div class="card gold-bar"><i data-lucide="globe-2" class="icon icon-lg"></i><h4>Coverage</h4><p>Reaches jurisdictions where formal cooperation is slow or unlikely.</p></div><div class="card gold-bar"><i data-lucide="git-pull-request" class="icon icon-lg"></i><h4>Deconfliction</h4><p>Cross-checks assertions from suspects, witnesses, and filings.</p></div><div class="card gold-bar"><i data-lucide="crosshair" class="icon icon-lg"></i><h4>Targeting</h4><p>Prioritises which assets, accounts, &amp; entities to request records on.</p></div><div class="card gold-bar"><i data-lucide="network" class="icon icon-lg"></i><h4>Pattern discovery</h4><p>Exposes networks of nominees, relatives, and shell entities.</p></div>
@@ -1550,30 +1569,24 @@ window.brandFail = brandFail;
       <div>UNODC estimates <strong>2–5% of global GDP</strong> is laundered annually — USD 800 billion to 2 trillion. Less than <strong>1%</strong> is recovered (<a href="https://www.europol.europa.eu" target="_blank" rel="noopener">Europol 2023</a>). The marginal value of better intel is enormous.</div>
     </div>
   </div>
-  <div class="footer"><span>Module 2 · OSINT in ML / NAO Investigations</span><span class="pageno">15 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 2 · OSINT in ML / NAO Investigations</span><span class="pageno">15 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>WHERE IT PLUGS IN</p><h2 class="title">OSINT across the ML lifecycle.</h2>
     <div class="cards cols-3 flex-1"><div class="card" style="padding:0;overflow:hidden;"><div style="background:var(--dark);color:white;padding:14px 18px;display:flex;align-items:center;gap:10px;"><i data-lucide="scan-search" class="icon"></i><span style="color:var(--accent);font-weight:800;font-size:18px;">01</span><span style="letter-spacing:1.5px;font-weight:700;font-size:13px;">DETECTION</span></div><div style="padding:14px 18px;"><div style="font-style:italic;font-size:13px;color:var(--ink);font-weight:600;">Trigger — typology match, tip-off, STR review.</div><div style="font-size:13.5px;color:var(--ink-soft);margin-top:6px;line-height:1.4;"><strong style="color:var(--accent);">OSINT:</strong> Profile subject &amp; their public footprint fast.</div></div></div><div class="card" style="padding:0;overflow:hidden;"><div style="background:var(--dark);color:white;padding:14px 18px;display:flex;align-items:center;gap:10px;"><i data-lucide="user-search" class="icon"></i><span style="color:var(--accent);font-weight:800;font-size:18px;">02</span><span style="letter-spacing:1.5px;font-weight:700;font-size:13px;">INQUIRY</span></div><div style="padding:14px 18px;"><div style="font-style:italic;font-size:13px;color:var(--ink);font-weight:600;">Preliminary fact-finding under NAB rules.</div><div style="font-size:13.5px;color:var(--ink-soft);margin-top:6px;line-height:1.4;"><strong style="color:var(--accent);">OSINT:</strong> Map entities, associates, addresses, assets.</div></div></div><div class="card" style="padding:0;overflow:hidden;"><div style="background:var(--dark);color:white;padding:14px 18px;display:flex;align-items:center;gap:10px;"><i data-lucide="folder-search" class="icon"></i><span style="color:var(--accent);font-weight:800;font-size:18px;">03</span><span style="letter-spacing:1.5px;font-weight:700;font-size:13px;">INVESTIGATION</span></div><div style="padding:14px 18px;"><div style="font-style:italic;font-size:13px;color:var(--ink);font-weight:600;">Formal case; banking, corporate, MLAT requests.</div><div style="font-size:13.5px;color:var(--ink-soft);margin-top:6px;line-height:1.4;"><strong style="color:var(--accent);">OSINT:</strong> Target requests; corroborate; identify nominees.</div></div></div><div class="card" style="padding:0;overflow:hidden;"><div style="background:var(--dark);color:white;padding:14px 18px;display:flex;align-items:center;gap:10px;"><i data-lucide="footprints" class="icon"></i><span style="color:var(--accent);font-weight:800;font-size:18px;">04</span><span style="letter-spacing:1.5px;font-weight:700;font-size:13px;">ASSET TRACING</span></div><div style="padding:14px 18px;"><div style="font-style:italic;font-size:13px;color:var(--ink);font-weight:600;">Where did the money go?</div><div style="font-size:13.5px;color:var(--ink-soft);margin-top:6px;line-height:1.4;"><strong style="color:var(--accent);">OSINT:</strong> Companies, real estate, vessels, crypto, travel.</div></div></div><div class="card" style="padding:0;overflow:hidden;"><div style="background:var(--dark);color:white;padding:14px 18px;display:flex;align-items:center;gap:10px;"><i data-lucide="gavel" class="icon"></i><span style="color:var(--accent);font-weight:800;font-size:18px;">05</span><span style="letter-spacing:1.5px;font-weight:700;font-size:13px;">PROSECUTION</span></div><div style="padding:14px 18px;"><div style="font-style:italic;font-size:13px;color:var(--ink);font-weight:600;">Reference before NAB court.</div><div style="font-size:13.5px;color:var(--ink-soft);margin-top:6px;line-height:1.4;"><strong style="color:var(--accent);">OSINT:</strong> Timeline exhibits, verified public records.</div></div></div><div class="card" style="padding:0;overflow:hidden;"><div style="background:var(--dark);color:white;padding:14px 18px;display:flex;align-items:center;gap:10px;"><i data-lucide="package-check" class="icon"></i><span style="color:var(--accent);font-weight:800;font-size:18px;">06</span><span style="letter-spacing:1.5px;font-weight:700;font-size:13px;">ASSET RECOVERY</span></div><div style="padding:14px 18px;"><div style="font-style:italic;font-size:13px;color:var(--ink);font-weight:600;">Enforcement &amp; repatriation.</div><div style="font-size:13.5px;color:var(--ink-soft);margin-top:6px;line-height:1.4;"><strong style="color:var(--accent);">OSINT:</strong> Post-judgment monitoring of respondents.</div></div></div></div>
   </div>
-  <div class="footer"><span>Module 2 · OSINT in ML / NAO Investigations</span><span class="pageno">16 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 2 · OSINT in ML / NAO Investigations</span><span class="pageno">16 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>MATCH THE METHOD TO THE SIGNAL</p><h2 class="title">FATF ML typologies.</h2><div class="subtitle">Each typology has its own OSINT signature. Knowing the signature tells you which sources to query.</div>
     <div class="kv"><div class="k"><i data-lucide="ship" class="icon"></i><img src="https://icons.duckduckgo.com/ip3/marinetraffic.com.ico" alt="marinetraffic.com" data-name="marinetraffic.com" class="favicon favicon-lg" onerror="brandFail(this)">Trade-based ML (TBML)</div><div class="v">Shipping registers, bills of lading, AIS vessel tracking (<img src="https://icons.duckduckgo.com/ip3/marinetraffic.com.ico" alt="marinetraffic.com" data-name="marinetraffic.com" class="favicon" onerror="brandFail(this)"> <a href="https://marinetraffic.com" target="_blank" rel="noopener">marinetraffic.com</a>), customs price benchmarks, transit-country company registries.</div></div><div class="kv"><div class="k"><i data-lucide="building-2" class="icon"></i><img src="https://icons.duckduckgo.com/ip3/opencorporates.com.ico" alt="opencorporates.com" data-name="opencorporates.com" class="favicon favicon-lg" onerror="brandFail(this)">Shell &amp; front companies</div><div class="v">Beneficial-ownership registries · <img src="https://icons.duckduckgo.com/ip3/opencorporates.com.ico" alt="opencorporates.com" data-name="opencorporates.com" class="favicon" onerror="brandFail(this)"> <a href="https://opencorporates.com" target="_blank" rel="noopener">opencorporates.com</a> · OCCRP Aleph · ICIJ leaks · Sayari · sanctions lists.</div></div><div class="kv"><div class="k"><i data-lucide="store" class="icon"></i><img src="https://icons.duckduckgo.com/ip3/google.com.ico" alt="google.com" data-name="google.com" class="favicon favicon-lg" onerror="brandFail(this)">Cash-intensive businesses</div><div class="v">Business social presence, Google reviews density, public filings vs lifestyle.</div></div><div class="kv"><div class="k"><i data-lucide="home" class="icon"></i>Real estate &amp; high-value</div><div class="v">Land records, property portals, yacht/aircraft registries, luxury marketplaces.</div></div><div class="kv"><div class="k"><i data-lucide="briefcase" class="icon"></i>Professional launderers</div><div class="v">Press coverage, foreign enforcement actions, PEP/adverse-media databases.</div></div><div class="kv"><div class="k"><i data-lucide="bitcoin" class="icon"></i><img src="https://icons.duckduckgo.com/ip3/etherscan.io.ico" alt="etherscan.io" data-name="etherscan.io" class="favicon favicon-lg" onerror="brandFail(this)">Crypto laundering</div><div class="v">Blockchain explorers, exchange sanctions, address clustering, darknet market references.</div></div>
   </div>
-  <div class="footer"><span>Module 2 · OSINT in ML / NAO Investigations</span><span class="pageno">17 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 2 · OSINT in ML / NAO Investigations</span><span class="pageno">17 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>UNMASKING THE REAL ACTOR</p><h2 class="title">Beneficial ownership &amp; shell companies.</h2><div class="subtitle">Between a bank account and the real person, layers of legal entities, nominees, and jurisdictions. OSINT collapses those layers.</div>
     <div class="two-col">
       <div class="col">
@@ -1598,12 +1611,10 @@ window.brandFail = brandFail;
       </div>
     </div>
   </div>
-  <div class="footer"><span>Module 2 · OSINT in ML / NAO Investigations</span><span class="pageno">18 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 2 · OSINT in ML / NAO Investigations</span><span class="pageno">18 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>THE PUBLIC FOOTPRINT OF AN INSIDER</p><h2 class="title">Lifestyle analysis &amp; unexplained wealth.</h2>
     <div class="cards cols-2 flex-1">
       <div class="card gold-bar"><i data-lucide="instagram" class="icon icon-lg"></i><h4>Social media</h4><p>Posts, check-ins, family accounts. Frequently under-sanitised in Pakistan — even for senior officers.</p></div><div class="card gold-bar"><i data-lucide="plane" class="icon icon-lg"></i><h4>Travel patterns</h4><p>Open booking sites, geo-tagged photos, family travel pages reveal frequency &amp; destinations.</p></div><div class="card gold-bar"><i data-lucide="car" class="icon icon-lg"></i><h4>Property &amp; vehicles</h4><p>Property portals, registry data, dealer brochures, social-media reveals of homes &amp; cars.</p></div><div class="card gold-bar"><i data-lucide="graduation-cap" class="icon icon-lg"></i><h4>Education / lifestyle</h4><p>Children's school fees, foreign universities, club memberships, expensive hobbies.</p></div>
@@ -1613,12 +1624,10 @@ window.brandFail = brandFail;
       <div><strong>NAO §9:</strong> "Assets disproportionate to known sources of income" — OSINT helps you build the lifestyle side of that equation cheaply &amp; corroborated.</div>
     </div>
   </div>
-  <div class="footer"><span>Module 2 · OSINT in ML / NAO Investigations</span><span class="pageno">19 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 2 · OSINT in ML / NAO Investigations</span><span class="pageno">19 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>FOLLOWING THE PAPER TRAIL ACROSS BORDERS</p><h2 class="title">International money trails.</h2>
     <div class="cards cols-3 flex-1">
       <div class="card gold-bar"><i data-lucide="globe" class="icon icon-lg"></i><h4>Cross-border companies</h4><p>Beneficial owners in offshore havens — BVI · Cayman · UAE · Mauritius · Seychelles.</p></div>
@@ -1629,12 +1638,10 @@ window.brandFail = brandFail;
       <div class="card gold-bar"><i data-lucide="share-2" class="icon icon-lg"></i><h4>Exchange of information</h4><p>FATF FIU exchange · Egmont Group · MLAT requests.</p></div>
     </div>
   </div>
-  <div class="footer"><span>Module 2 · OSINT in ML / NAO Investigations</span><span class="pageno">20 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 2 · OSINT in ML / NAO Investigations</span><span class="pageno">20 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>WHAT OSINT CAN SEE ON-CHAIN</p><h2 class="title">Crypto-enabled money laundering.</h2><div class="subtitle">Every Bitcoin / Ethereum transaction is public, forever. Following the chain is purely OSINT.</div>
     <div class="two-col">
       <div class="col">
@@ -1669,12 +1676,10 @@ window.brandFail = brandFail;
       <div><strong>SBP context:</strong> trading is restricted in Pakistan — but OSINT analysis of public ledgers is observation, not transaction. Treat artefacts under Article 164 chain-of-custody.</div>
     </div>
   </div>
-  <div class="footer"><span>Module 2 · OSINT in ML / NAO Investigations</span><span class="pageno">21 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 2 · OSINT in ML / NAO Investigations</span><span class="pageno">21 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>CHAIN OF CUSTODY · HASHING · ADMISSIBILITY</p><h2 class="title">Making OSINT court-ready.</h2>
     <div class="cards cols-2 flex-1">
       <div class="card gold-bar"><i data-lucide="file-check" class="icon icon-lg"></i><h4>Capture properly</h4><p>Use <a href="https://hunch.ly" target="_blank" rel="noopener">Hunchly</a> or a forensic browser capture — not naked screenshots. Preserve URL, timestamp, full-page render.</p></div>
@@ -1687,12 +1692,10 @@ window.brandFail = brandFail;
       <div><strong>Defensibility test:</strong> can a competent third party reproduce your finding from your log? If yes, it will hold up in NAB court.</div>
     </div>
   </div>
-  <div class="footer"><span>Module 2 · OSINT in ML / NAO Investigations</span><span class="pageno">22 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 2 · OSINT in ML / NAO Investigations</span><span class="pageno">22 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>ANONYMIZED RECONSTRUCTION</p><h2 class="title">Case vignette.</h2><div class="subtitle">Mid-level public official · STR-flagged inflows · OSINT-led pivot in 20 minutes.</div>
     <div class="cards cols-2 flex-1">
       <div class="card dark"><i data-lucide="user-x" class="icon icon-lg"></i><h4 style="color:white;">Subject &amp; signal</h4><p>Mid-level public official; STR flagged unexplained inflows. Lifestyle visible online disproportionate to declared income.</p></div>
@@ -1701,12 +1704,10 @@ window.brandFail = brandFail;
       <div class="card dark"><i data-lucide="check-circle" class="icon icon-lg"></i><h4 style="color:white;">Outcome</h4><p>OSINT pre-targeted bank/MLAT requests; saved months of formal cooperation. Court submission used hashed artefacts under Art. 164.</p></div>
     </div>
   </div>
-  <div class="footer"><span>Module 2 · OSINT in ML / NAO Investigations</span><span class="pageno">23 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 2 · OSINT in ML / NAO Investigations</span><span class="pageno">23 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>WHERE IT WILL HURT YOU IF YOU ARE NOT CAREFUL</p><h2 class="title">Limits &amp; pitfalls.</h2>
     <div class="cards cols-3 flex-1">
       <div class="card" style="border-top:4px solid var(--red);"><i data-lucide="eye-off" class="icon icon-lg"></i><h4>Confirmation bias</h4><p>Looking only for evidence that supports the theory.</p></div><div class="card" style="border-top:4px solid var(--red);"><i data-lucide="clock" class="icon icon-lg"></i><h4>Stale data</h4><p>Information that was true a year ago may be stale today.</p></div><div class="card" style="border-top:4px solid var(--red);"><i data-lucide="user-x" class="icon icon-lg"></i><h4>Impersonation</h4><p>Parody / fake / impersonator accounts taken as the subject.</p></div><div class="card" style="border-top:4px solid var(--red);"><i data-lucide="bot" class="icon icon-lg"></i><h4>AI fabrication</h4><p>Don't trust LLM summaries without checking each source.</p></div><div class="card" style="border-top:4px solid var(--red);"><i data-lucide="scale" class="icon icon-lg"></i><h4>Over-reach</h4><p>Crossing into PECA-restricted territory destroys the case.</p></div><div class="card" style="border-top:4px solid var(--red);"><i data-lucide="user" class="icon icon-lg"></i><h4>Single source</h4><p>One social-media post is suggestive — never conclusive.</p></div>
@@ -1716,12 +1717,10 @@ window.brandFail = brandFail;
       <div><strong>Operating principle:</strong> OSINT is corroboration, not conclusion. Every finding must be second-sourced before it goes into a court submission.</div>
     </div>
   </div>
-  <div class="footer"><span>Module 2 · OSINT in ML / NAO Investigations</span><span class="pageno">24 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 2 · OSINT in ML / NAO Investigations</span><span class="pageno">24 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>11:45 – 13:15</p><h2 class="title">Session 2 agenda.</h2>
     <div class="agenda">
       <div class="agenda-row"><div><i data-lucide="compass" class="icon"></i></div><div class="time">11:45 – 12:00</div><div class="topic">OSINT frameworks &amp; the investigation methodology</div></div>
@@ -1731,23 +1730,19 @@ window.brandFail = brandFail;
       <div class="agenda-row"><div><i data-lucide="shield" class="icon"></i></div><div class="time">13:10 – 13:15</div><div class="topic">Tradecraft, OPSEC, 90-day learning path, Q&amp;A</div></div>
     </div>
   </div>
-  <div class="footer"><span>Session 2 Opening</span><span class="pageno">25 / 67</span></div>
-</section>
+  <div class="footer"><span>Session 2 Opening</span><span class="pageno">25 / 67</span></div></div></section>
 
 
-<section class="slide theme-dark">
-  <div class="divider">
+<section class="slide theme-dark"><div class="frame"><div class="divider">
     <div class="module"><i data-lucide="compass" class="icon icon-lg"></i> MODULE 03</div>
     <h2>OSINT<br>frameworks.</h2>
     <div class="sub">Methodology before tools — structure beats talent over time.</div>
     <div class="preview-tags"><span class="tag">WHY METHOD</span><span class="tag">THE FRAMEWORK</span><span class="tag">CYCLE APPLIED</span><span class="tag">MALTEGO METHODOLOGY</span></div>
   </div>
-  <div class="footer"><span>Module 3 · OSINT Frameworks</span><span class="pageno">26 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 3 · OSINT Frameworks</span><span class="pageno">26 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>STRUCTURE BEATS TALENT OVER TIME</p><h2 class="title">Why frameworks matter.</h2>
     <div class="cards cols-3 flex-1">
       <div class="card gold-bar"><i data-lucide="repeat" class="icon icon-lg"></i><h4>Reproducibility</h4><p>Two analysts, same target, same artefacts — the case stands up because the method is fixed.</p></div>
@@ -1759,12 +1754,10 @@ window.brandFail = brandFail;
       <div><strong>The investigator's edge is method, not access.</strong> Public information becomes intelligence only when collected and reasoned about systematically.</div>
     </div>
   </div>
-  <div class="footer"><span>Module 3 · OSINT Frameworks</span><span class="pageno">27 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 3 · OSINT Frameworks</span><span class="pageno">27 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>THE DISCOVERY MAP</p><h2 class="title">osintframework.com</h2><div class="subtitle">Free, community-maintained tree of resources. Use it as a coverage check — every category prompts: what would I miss if I skipped this?</div>
     <div class="two-col">
       <div class="col">
@@ -1797,12 +1790,10 @@ window.brandFail = brandFail;
       </div>
     </div>
   </div>
-  <div class="footer"><span>Module 3 · OSINT Frameworks</span><span class="pageno">28 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 3 · OSINT Frameworks</span><span class="pageno">28 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>WHAT EACH STEP ACTUALLY LOOKS LIKE</p><h2 class="title">The intelligence cycle applied.</h2>
     <div class="steps">
       <div class="step"><div class="num"><i data-lucide="compass" class="icon"></i>01</div><div class="label">PLAN</div><div class="desc">Write the PIR — Priority Intelligence Requirement.</div></div><div class="step"><div class="num"><i data-lucide="download" class="icon"></i>02</div><div class="label">COLLECT</div><div class="desc">Map sources to PIR. Capture originals + hashes.</div></div><div class="step"><div class="num"><i data-lucide="filter" class="icon"></i>03</div><div class="label">PROCESS</div><div class="desc">Translate, dedupe, structure into entities.</div></div><div class="step"><div class="num"><i data-lucide="git-merge" class="icon"></i>04</div><div class="label">ANALYZE</div><div class="desc">Pivot, corroborate, grade with Admiralty.</div></div><div class="step"><div class="num"><i data-lucide="send" class="icon"></i>05</div><div class="label">DISSEMINATE</div><div class="desc">Brief decision-maker; close feedback loop.</div></div>
@@ -1812,12 +1803,10 @@ window.brandFail = brandFail;
       <div><strong>The PIR template:</strong> Subject · Question · Decision · Indicators · Boundary · Deadline. Six fields up front prevents 80% of wasted-effort failures.</div>
     </div>
   </div>
-  <div class="footer"><span>Module 3 · OSINT Frameworks</span><span class="pageno">29 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 3 · OSINT Frameworks</span><span class="pageno">29 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>ENTITIES · TRANSFORMS · PIVOTS</p><h2 class="title">The Maltego methodology.</h2>
     <div class="two-col">
       <div class="col">
@@ -1845,23 +1834,19 @@ window.brandFail = brandFail;
       <div><strong>The pivot principle:</strong> every artefact is a node, every transform an edge. Each new entity becomes the next query — that's the OSINT graph.</div>
     </div>
   </div>
-  <div class="footer"><span>Module 3 · OSINT Frameworks</span><span class="pageno">30 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 3 · OSINT Frameworks</span><span class="pageno">30 / 67</span></div></div></section>
 
 
-<section class="slide theme-dark">
-  <div class="divider">
+<section class="slide theme-dark"><div class="frame"><div class="divider">
     <div class="module"><i data-lucide="terminal" class="icon icon-lg"></i> MODULE 04</div>
     <h2>Kali Linux<br>for OSINT.</h2>
     <div class="sub">Open · free · reproducible · the analyst's workstation in a box.</div>
     <div class="preview-tags"><span class="tag">theHarvester</span><span class="tag">Recon-ng</span><span class="tag">Sherlock</span><span class="tag">SpiderFoot</span><span class="tag">Maltego CE</span><span class="tag">ExifTool</span></div>
   </div>
-  <div class="footer"><span>Module 4 · Kali Linux for OSINT</span><span class="pageno">31 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 4 · Kali Linux for OSINT</span><span class="pageno">31 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>YOUR OSINT WORKSTATION IN A BOX</p><h2 class="title">What is Kali Linux?</h2><div class="subtitle">A Debian-based distribution maintained by Offensive Security. 600+ security &amp; intelligence tools, pre-installed and signed.</div>
     <div class="cards cols-3 flex-1">
       <div class="card gold-bar">
@@ -1887,12 +1872,10 @@ window.brandFail = brandFail;
       <div><strong>Reference VM:</strong> Kali 2026.1 · 8 GB RAM · 4 vCPU · 80 GB disk · NAT or Bridged network · clean snapshot named <code class="inline">pre-demo</code> before every session.</div>
     </div>
   </div>
-  <div class="footer"><span>Module 4 · Kali Linux for OSINT</span><span class="pageno">32 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 4 · Kali Linux for OSINT</span><span class="pageno">32 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>PASSIVE RECON FOR PEOPLE &amp; DOMAINS</p><h2 class="title">theHarvester.</h2><div class="subtitle">Aggregates emails, subdomains, hosts, names, and IPs from public search engines &amp; certificate logs — without sending a packet to the target.</div>
     <div class="two-col">
       <div class="col">
@@ -1931,12 +1914,10 @@ vpn-staging.acme-trading.pk
       </div>
     </div>
   </div>
-  <div class="footer"><span>Module 4 · Kali Linux for OSINT</span><span class="pageno">33 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 4 · Kali Linux for OSINT</span><span class="pageno">33 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>A FRAMEWORK · NOT A SCRIPT</p><h2 class="title">Recon-ng.</h2><div class="subtitle">Modular, marketplace-driven OSINT framework. 100+ modules, persistent workspaces, structured reports.</div>
     <div class="cards cols-2" style="margin-bottom:14px;">
       <div class="card gold-bar"><i data-lucide="layers" class="icon icon-lg"></i><h4>Modular workspace model</h4><p>Marketplace of 100+ modules. Workspaces isolate cases. Database persists hosts, contacts, profiles automatically.</p></div>
@@ -1951,12 +1932,10 @@ vpn-staging.acme-trading.pk
 [recon-ng] &gt; modules load reporting/html
 [recon-ng] &gt; run</pre>
   </div>
-  <div class="footer"><span>Module 4 · Kali Linux for OSINT</span><span class="pageno">34 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 4 · Kali Linux for OSINT</span><span class="pageno">34 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>USERNAME ENUMERATION ACROSS 400+ SITES</p><h2 class="title">Sherlock &amp; WhatsMyName.</h2><div class="subtitle">Username reuse is the single biggest OPSEC mistake. Five hits = five different views of the same person.</div>
     <div class="two-col">
       <div class="col">
@@ -1987,12 +1966,10 @@ vpn-staging.acme-trading.pk
       </div>
     </div>
   </div>
-  <div class="footer"><span>Module 4 · Kali Linux for OSINT</span><span class="pageno">35 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 4 · Kali Linux for OSINT</span><span class="pageno">35 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>AUTOMATED FULL-SPECTRUM OSINT</p><h2 class="title">SpiderFoot.</h2><div class="subtitle">Throw it an email, IP, domain, person, or wallet. It runs every applicable module, deduplicates, and graphs the result.</div>
     <div class="cards cols-2" style="margin-bottom:14px;">
       <div class="card gold-bar"><i data-lucide="workflow" class="icon icon-lg"></i><h4>200+ modules in parallel</h4><p>Maps to every common entity type. Auto-pivots between them. Visual exploration via web UI.</p></div>
@@ -2009,12 +1986,10 @@ vpn-staging.acme-trading.pk
     </div>
     <div style="margin-top:8px;font-size:13px;color:var(--mute);"><a href="https://www.spiderfoot.net" target="_blank" rel="noopener">spiderfoot.net</a></div>
   </div>
-  <div class="footer"><span>Module 4 · Kali Linux for OSINT</span><span class="pageno">36 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 4 · Kali Linux for OSINT</span><span class="pageno">36 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>LINK ANALYSIS FOR INVESTIGATIONS</p><h2 class="title">Maltego Community Edition.</h2>
     <div class="cards cols-3 flex-1">
       <div class="card gold-bar"><i data-lucide="box" class="icon icon-lg"></i><h4>Entity-driven canvas</h4><p>Drag a Person / Domain / Email entity onto the canvas; right-click runs transforms; results expand the graph.</p></div>
@@ -2027,12 +2002,10 @@ vpn-staging.acme-trading.pk
     </div>
     <div style="margin-top:8px;font-size:13px;color:var(--mute);"><a href="https://www.maltego.com" target="_blank" rel="noopener">maltego.com</a></div>
   </div>
-  <div class="footer"><span>Module 4 · Kali Linux for OSINT</span><span class="pageno">37 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 4 · Kali Linux for OSINT</span><span class="pageno">37 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>METADATA IS EVIDENCE</p><h2 class="title">ExifTool.</h2><div class="subtitle">Every document is a confession. ExifTool reads the part the author didn't mean to share.</div>
     <div class="two-col">
       <div class="col">
@@ -2062,12 +2035,10 @@ vpn-staging.acme-trading.pk
     </div>
     <div style="margin-top:8px;font-size:13px;color:var(--mute);"><a href="https://exiftool.org" target="_blank" rel="noopener">exiftool.org</a></div>
   </div>
-  <div class="footer"><span>Module 4 · Kali Linux for OSINT</span><span class="pageno">38 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 4 · Kali Linux for OSINT</span><span class="pageno">38 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>AMASS · SUBFINDER · CRT.SH</p><h2 class="title">Domain reconnaissance.</h2><div class="subtitle">Public certificate-transparency logs reveal every TLS host a domain ever issued — including ones already removed.</div>
     <div class="cards cols-3" style="margin-bottom:18px;">
       <div class="card gold-bar"><i data-lucide="git-fork" class="icon icon-lg"></i><h4>Amass</h4><p>Passive + active subdomain enumeration with built-in graph database. The most thorough tool in the category.</p></div>
@@ -2079,34 +2050,28 @@ vpn-staging.acme-trading.pk
 <span class="prompt">$</span> curl -s "https://crt.sh/?q=%25.acme-trading.pk&output=json" \
     | jq -r '.[].name_value' | sort -u</pre>
   </div>
-  <div class="footer"><span>Module 4 · Kali Linux for OSINT</span><span class="pageno">39 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 4 · Kali Linux for OSINT</span><span class="pageno">39 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>WHAT TO REACH FOR · WHEN</p><h2 class="title">Kali OSINT toolkit reference.</h2>
     <div class="cards cols-3 flex-1">
       <div class="card"><i data-lucide="globe" class="icon icon-lg"></i><h4>Domain &amp; DNS</h4><p>theHarvester · Amass · subfinder · crt.sh</p></div><div class="card"><i data-lucide="user-search" class="icon icon-lg"></i><h4>People search</h4><p>Sherlock · WhatsMyName · OSRFramework · Maigret</p></div><div class="card"><i data-lucide="at-sign" class="icon icon-lg"></i><h4>Email</h4><p>Holehe · h8mail · EmailRep</p></div><div class="card"><i data-lucide="file-search" class="icon icon-lg"></i><h4>Metadata</h4><p>ExifTool · pdfinfo · MAT2</p></div><div class="card"><i data-lucide="image" class="icon icon-lg"></i><h4>Visual recon</h4><p>Eyewitness · Aquatone · gowitness</p></div><div class="card"><i data-lucide="bug" class="icon icon-lg"></i><h4>Crawler</h4><p>Photon · Katana · gospider</p></div><div class="card"><i data-lucide="bitcoin" class="icon icon-lg"></i><h4>Crypto</h4><p>Etherscan CLI · BTC.com explorer</p></div><div class="card"><i data-lucide="phone" class="icon icon-lg"></i><h4>Phone</h4><p>PhoneInfoga · Truecaller-pivot</p></div><div class="card"><i data-lucide="layers" class="icon icon-lg"></i><h4>Frameworks</h4><p>Recon-ng · SpiderFoot · Maltego CE</p></div>
     </div>
   </div>
-  <div class="footer"><span>Module 4 · Kali Linux for OSINT</span><span class="pageno">40 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 4 · Kali Linux for OSINT</span><span class="pageno">40 / 67</span></div></div></section>
 
 
-<section class="slide theme-dark">
-  <div class="divider">
+<section class="slide theme-dark"><div class="frame"><div class="divider">
     <div class="module"><i data-lucide="database" class="icon icon-lg"></i> MODULE 05</div>
     <h2>Sources &amp;<br>platforms.</h2>
     <div class="sub">Where investigators find signal — surface · deep · dark · crypto.</div>
     <div class="preview-tags"><span class="tag">DORKING</span><span class="tag">SOCMINT</span><span class="tag">IMAGES</span><span class="tag">DOMAINS</span><span class="tag">CORPORATE</span><span class="tag">BREACHES</span><span class="tag">DARK WEB</span><span class="tag">GEO</span><span class="tag">CRYPTO</span></div>
   </div>
-  <div class="footer"><span>Module 5 · OSINT Sources & Platforms</span><span class="pageno">41 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 5 · OSINT Sources & Platforms</span><span class="pageno">41 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>YOUR OLDEST OSINT TOOL</p><h2 class="title">Google dorking.</h2><div class="subtitle">Six operators — site, filetype, intitle, inurl, exact-match, OR — get to the artefact in five iterations.</div>
     <pre class="code"><span class="comment"># Site-restricted search</span>
 site:acme-trading.pk
@@ -2128,12 +2093,10 @@ intitle:"index of" site:acme-trading.pk
       <div><strong>Don't stop at Google.</strong> Run the same dorks on <a href="https://bing.com" target="_blank" rel="noopener">Bing</a>, <a href="https://duckduckgo.com" target="_blank" rel="noopener">DuckDuckGo</a>, and <a href="https://yandex.com" target="_blank" rel="noopener">Yandex</a>. Yandex indexes Russian and Central Asian sites better — useful for cross-border ML.</div>
     </div>
   </div>
-  <div class="footer"><span>Module 5 · OSINT Sources & Platforms</span><span class="pageno">42 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 5 · OSINT Sources & Platforms</span><span class="pageno">42 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>PEOPLE LEAK MORE THAN THEY REALISE</p><h2 class="title">Social media intelligence.</h2>
     <div class="logo-strip" style="margin-bottom:18px;justify-content:center;gap:48px;">
       <img src="https://cdn.simpleicons.org/facebook" alt="Facebook" data-name="Facebook" class="brand" onerror="brandFail(this)">
@@ -2154,12 +2117,10 @@ intitle:"index of" site:acme-trading.pk
       <div class="card gold-bar"><i data-lucide="puzzle" class="icon icon-lg"></i><h4>Connected apps</h4><p>Third-party services linked to the account expand the surface.</p></div>
     </div>
   </div>
-  <div class="footer"><span>Module 5 · OSINT Sources & Platforms</span><span class="pageno">43 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 5 · OSINT Sources & Platforms</span><span class="pageno">43 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>WHAT A SINGLE PHOTO CAN PROVE</p><h2 class="title">Image intelligence &amp; reverse search.</h2>
     <div class="two-col">
       <div class="col">
@@ -2186,12 +2147,10 @@ intitle:"index of" site:acme-trading.pk
       <div><strong>Geolocation cross-check:</strong> <a href="https://www.suncalc.org" target="_blank" rel="noopener">SunCalc</a> + shadow direction in a photo + estimated date can confirm or refute a claimed location.</div>
     </div>
   </div>
-  <div class="footer"><span>Module 5 · OSINT Sources & Platforms</span><span class="pageno">44 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 5 · OSINT Sources & Platforms</span><span class="pageno">44 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>INFRASTRUCTURE TELLS STORIES PEOPLE DON'T</p><h2 class="title">Domain · WHOIS · DNS · CT.</h2>
     <div class="cards cols-2 flex-1">
       <div class="card gold-bar"><i data-lucide="file-text" class="icon icon-lg"></i><h4>WHOIS</h4><p>Registrant name (or privacy proxy), org, registrar, registration date, name servers. Privacy services hide names but rarely registration date — a strong operational signal.</p></div>
@@ -2200,12 +2159,10 @@ intitle:"index of" site:acme-trading.pk
       <div class="card gold-bar"><img src="https://icons.duckduckgo.com/ip3/web.archive.org.ico" alt="web.archive.org" data-name="web.archive.org" class="favicon favicon-lg" onerror="brandFail(this)"><h4><a href="https://web.archive.org" target="_blank" rel="noopener">Wayback Machine</a></h4><p>Reveals what a website said before it was scrubbed. Old "About" pages and team rosters are gold for shell-company traces.</p></div>
     </div>
   </div>
-  <div class="footer"><span>Module 5 · OSINT Sources & Platforms</span><span class="pageno">45 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 5 · OSINT Sources & Platforms</span><span class="pageno">45 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>THE PAPER LAYER BEHIND THE MONEY</p><h2 class="title">Corporate records &amp; beneficial ownership.</h2>
     <div class="cards cols-3 flex-1">
       <div class="card">
@@ -2246,12 +2203,10 @@ intitle:"index of" site:acme-trading.pk
       <div><strong>Quote-ready in court:</strong> registry data is documentary evidence under <a href="https://pakistanlawsite.com" target="_blank" rel="noopener">Article 73 of Qanun-e-Shahadat 1984</a>. Always download the registry's official PDF copy and hash it.</div>
     </div>
   </div>
-  <div class="footer"><span>Module 5 · OSINT Sources & Platforms</span><span class="pageno">46 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 5 · OSINT Sources & Platforms</span><span class="pageno">46 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>POWERFUL · SENSITIVE · ONLY WITH LEGAL COVER</p><h2 class="title">Breach &amp; leak data.</h2>
     <div class="two-col">
       <div class="col">
@@ -2278,12 +2233,10 @@ intitle:"index of" site:acme-trading.pk
       <div><strong>PECA boundary:</strong> use only third-party indexers that have already published the dataset publicly. Never purchase data from underground markets — that's PECA §3 territory.</div>
     </div>
   </div>
-  <div class="footer"><span>Module 5 · OSINT Sources & Platforms</span><span class="pageno">47 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 5 · OSINT Sources & Platforms</span><span class="pageno">47 / 67</span></div></div></section>
 
 
-<section class="slide theme-dark">
-  <div class="body">
+<section class="slide theme-dark"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>WHERE SANCTIONED ACTORS &amp; LAUNDERERS TALK</p><h2 class="title">Dark web monitoring.</h2>
     <div class="cards cols-3 flex-1">
       <div class="card dark"><i data-lucide="eye-off" class="icon icon-lg"></i><h4 style="color:white;">What's there</h4><p>Illicit markets, leak forums, ransomware victim portals, sanctioned-actor chatter, hawala broker channels, mixer ads.</p></div>
@@ -2295,12 +2248,10 @@ intitle:"index of" site:acme-trading.pk
       <div><strong>Never download or click on the dark web from a personal machine.</strong> Use the VM's snapshot-and-revert pattern after every session.</div>
     </div>
   </div>
-  <div class="footer"><span>Module 5 · OSINT Sources & Platforms</span><span class="pageno">48 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 5 · OSINT Sources & Platforms</span><span class="pageno">48 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>PUTTING THE MONEY ON A MAP</p><h2 class="title">Geospatial / GEOINT workflow.</h2>
     <div class="cards cols-3 flex-1">
       <div class="card gold-bar">
@@ -2336,12 +2287,10 @@ intitle:"index of" site:acme-trading.pk
       <div><strong>Layered analysis:</strong> overlay declared ECP asset → satellite imagery over time → property registry → social-media photos. Discrepancies between layers are the case.</div>
     </div>
   </div>
-  <div class="footer"><span>Module 5 · OSINT Sources & Platforms</span><span class="pageno">49 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 5 · OSINT Sources & Platforms</span><span class="pageno">49 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>EXPLORERS · CLUSTERING · ATTRIBUTION</p><h2 class="title">Crypto OSINT essentials.</h2>
     <div class="two-col">
       <div class="col">
@@ -2373,12 +2322,10 @@ ofac/downloads/sdn.csv -o sdn.csv
       </div>
     </div>
   </div>
-  <div class="footer"><span>Module 5 · OSINT Sources & Platforms</span><span class="pageno">50 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 5 · OSINT Sources & Platforms</span><span class="pageno">50 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>ENTERPRISE OSINT PLATFORMS</p><h2 class="title">When free tools hit their ceiling.</h2><div class="subtitle">When the case spans hundreds of entities and millions of transactions, the right enterprise platform compresses weeks of analyst time into hours.</div>
     <div class="cards cols-2 flex-1">
       <div class="card gold-bar"><i data-lucide="network" class="icon icon-lg"></i><h4>Maltego XL</h4><p>Removes the CE 12-result cap. Massive transform marketplace. The graph-analytics standard for link analysis. <a href="https://maltego.com" target="_blank" rel="noopener">maltego.com</a></p></div>
@@ -2387,23 +2334,19 @@ ofac/downloads/sdn.csv -o sdn.csv
       <div class="card gold-bar"><i data-lucide="server" class="icon icon-lg"></i><h4>CLERINT Fusion</h4><p>Airgapped, AI-assisted, knowledge-graph fusion of CDR + IPDR + financial + OSINT. Designed for classified environments.</p></div>
     </div>
   </div>
-  <div class="footer"><span>Module 5 · OSINT Sources & Platforms</span><span class="pageno">51 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 5 · OSINT Sources & Platforms</span><span class="pageno">51 / 67</span></div></div></section>
 
 
-<section class="slide theme-dark">
-  <div class="divider">
+<section class="slide theme-dark"><div class="frame"><div class="divider">
     <div class="module"><i data-lucide="smartphone" class="icon icon-lg"></i> MODULE 06</div>
     <h2>CDR &amp;<br>IPDR analysis.</h2>
     <div class="sub">From raw telco exports to courtroom-ready patterns.</div>
     <div class="preview-tags"><span class="tag">WHAT IS CDR</span><span class="tag">ANATOMY</span><span class="tag">WORKFLOW</span><span class="tag">IPDR ADDS</span><span class="tag">WORKED EXAMPLE</span><span class="tag">PITFALLS</span></div>
   </div>
-  <div class="footer"><span>Module 6 · CDR & IPDR Analysis</span><span class="pageno">52 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 6 · CDR & IPDR Analysis</span><span class="pageno">52 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>CALL DETAIL RECORDS — THE WHO / WHEN / HOW-LONG</p><h2 class="title">What is a CDR?</h2>
     <div class="cards cols-3 flex-1">
       <div class="card gold-bar"><i data-lucide="phone-call" class="icon icon-lg"></i><h4>What it captures</h4><p>Per call: A-party, B-party, start time, duration, IMEI, IMSI, cell tower (LAC + CID), call type. Generated by every operator in real time.</p></div>
@@ -2415,12 +2358,10 @@ ofac/downloads/sdn.csv -o sdn.csv
       <div><strong>Legal framing:</strong> CDR access in Pakistan is statutorily controlled. Never analyse a CDR you have not received through proper case authority.</div>
     </div>
   </div>
-  <div class="footer"><span>Module 6 · CDR & IPDR Analysis</span><span class="pageno">53 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 6 · CDR & IPDR Analysis</span><span class="pageno">53 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>THE FIELDS AN ANALYST USES</p><h2 class="title">Anatomy of a CDR record.</h2>
     <table class="grid">
       <tr><th>Field</th><th>Type</th><th>Investigator value</th></tr>
@@ -2433,12 +2374,10 @@ ofac/downloads/sdn.csv -o sdn.csv
       <tr><td><code class="inline">LAC + CellID</code></td><td>Tower</td><td>Approximate location at call time</td></tr>
     </table>
   </div>
-  <div class="footer"><span>Module 6 · CDR & IPDR Analysis</span><span class="pageno">54 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 6 · CDR & IPDR Analysis</span><span class="pageno">54 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>FROM RAW EXPORT TO FINDING</p><h2 class="title">CDR analysis workflow.</h2>
     <div class="steps">
       <div class="step"><div class="num"><i data-lucide="download" class="icon"></i>01</div><div class="label">INGEST</div><div class="desc">Load CSV / Excel into pandas. Verify schema, parse timestamps.</div></div><div class="step"><div class="num"><i data-lucide="bar-chart-3" class="icon"></i>02</div><div class="label">PROFILE</div><div class="desc">Top-N called, top-N callers, daily / nightly distribution.</div></div><div class="step"><div class="num"><i data-lucide="git-merge" class="icon"></i>03</div><div class="label">PIVOT</div><div class="desc">Co-location · Burst pattern · Burner SIMs.</div></div><div class="step"><div class="num"><i data-lucide="network" class="icon"></i>04</div><div class="label">GRAPH</div><div class="desc">Build NetworkX directed graph; degree, betweenness centrality.</div></div><div class="step"><div class="num"><i data-lucide="git-pull-request" class="icon"></i>05</div><div class="label">CORROBORATE</div><div class="desc">Cross-reference bank tx, asset records, OSINT names.</div></div>
@@ -2448,12 +2387,10 @@ ofac/downloads/sdn.csv -o sdn.csv
       <div><strong>Tooling reality:</strong> for one-off cases, <a href="https://pandas.pydata.org" target="_blank" rel="noopener">pandas</a> + <a href="https://networkx.org" target="_blank" rel="noopener">NetworkX</a> in 30 lines of Python is enough. For unit-wide work, CLERINT Fusion ingests CDR + IPDR + financial in one knowledge graph.</div>
     </div>
   </div>
-  <div class="footer"><span>Module 6 · CDR & IPDR Analysis</span><span class="pageno">55 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 6 · CDR & IPDR Analysis</span><span class="pageno">55 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>INTERNET PROTOCOL DETAIL RECORDS</p><h2 class="title">What IPDR adds.</h2>
     <div class="two-col">
       <div class="col">
@@ -2481,12 +2418,10 @@ ofac/downloads/sdn.csv -o sdn.csv
       <div><strong>IPDR does NOT carry payload.</strong> You see the subscriber spoke to a Telegram IP — not what they said. Same Article 164 chain-of-custody applies.</div>
     </div>
   </div>
-  <div class="footer"><span>Module 6 · CDR & IPDR Analysis</span><span class="pageno">56 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 6 · CDR & IPDR Analysis</span><span class="pageno">56 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>RECONSTRUCTING A DAY</p><h2 class="title">A worked example.</h2><div class="subtitle">CDR + IPDR + ATM withdrawal log = three independent layers, one defensible narrative.</div>
     <div class="cards cols-3 flex-1">
       <div class="card gold-bar"><i data-lucide="sun" class="icon icon-lg"></i><h4>Morning</h4><p><strong>06:30</strong> — IPDR shows WhatsApp + Gmail traffic from home tower. CDR shows 3 short calls to a known facilitator.</p></div>
@@ -2498,34 +2433,28 @@ ofac/downloads/sdn.csv -o sdn.csv
       <div><strong>The pattern:</strong> the late-night Telegram session at an unexpected tower — corroborated against bank-account activity timeline — became the focal evidence in the case.</div>
     </div>
   </div>
-  <div class="footer"><span>Module 6 · CDR & IPDR Analysis</span><span class="pageno">57 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 6 · CDR & IPDR Analysis</span><span class="pageno">57 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>COMMON MISTAKES THAT LOSE CASES</p><h2 class="title">CDR / IPDR pitfalls.</h2>
     <div class="cards cols-3 flex-1">
       <div class="card" style="border-top:4px solid var(--red);"><i data-lucide="clock" class="icon icon-lg"></i><h4>Tower ≠ location</h4><p>Cell coverage overlaps. Same tower implies proximity, not co-presence in the same room.</p></div><div class="card" style="border-top:4px solid var(--red);"><i data-lucide="user-x" class="icon icon-lg"></i><h4>SIM ≠ identity</h4><p>Who held the SIM at call time? CNIC-binding helps but isn't proof of physical custody.</p></div><div class="card" style="border-top:4px solid var(--red);"><i data-lucide="clock" class="icon icon-lg"></i><h4>Time-zone slip</h4><p>Operator exports in UTC; analyst overlays in PKT. One bad join = wrong narrative.</p></div><div class="card" style="border-top:4px solid var(--red);"><i data-lucide="file-x" class="icon icon-lg"></i><h4>Schema drift</h4><p>Each operator's column names differ. Re-validate the schema on every new export.</p></div><div class="card" style="border-top:4px solid var(--red);"><i data-lucide="alert-octagon" class="icon icon-lg"></i><h4>Sample bias</h4><p>Asking only for one subject misses peer SIMs. Request the network around the subject.</p></div><div class="card" style="border-top:4px solid var(--red);"><i data-lucide="scale" class="icon icon-lg"></i><h4>Admissibility gap</h4><p>Hash the export, log the chain. Without it, defence motion can exclude the entire dataset.</p></div>
     </div>
   </div>
-  <div class="footer"><span>Module 6 · CDR & IPDR Analysis</span><span class="pageno">58 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 6 · CDR & IPDR Analysis</span><span class="pageno">58 / 67</span></div></div></section>
 
 
-<section class="slide theme-dark">
-  <div class="divider">
+<section class="slide theme-dark"><div class="frame"><div class="divider">
     <div class="module"><i data-lucide="shield" class="icon icon-lg"></i> MODULE 07</div>
     <h2>Tradecraft<br>&amp; closing.</h2>
     <div class="sub">OPSEC · persona discipline · attribution · what to study next.</div>
     <div class="preview-tags"><span class="tag">SOCKPUPPETS</span><span class="tag">ATTRIBUTION</span><span class="tag">METADATA PATTERNS</span><span class="tag">OPSEC</span><span class="tag">90-DAY PATH</span></div>
   </div>
-  <div class="footer"><span>Module 7 · Tradecraft & Closing</span><span class="pageno">59 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 7 · Tradecraft & Closing</span><span class="pageno">59 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>PERSONAS ARE A TOOL · NOT A COSTUME</p><h2 class="title">Sockpuppets &amp; investigative personas.</h2>
     <div class="cards cols-2 flex-1">
       <div class="card gold-bar"><i data-lucide="user-plus" class="icon icon-lg"></i><h4>Build over time</h4><p>Real personas are aged at least 60 days before active use. Sudden creation + immediate target contact is a red flag to any platform.</p></div>
@@ -2534,12 +2463,10 @@ ofac/downloads/sdn.csv -o sdn.csv
       <div class="card gold-bar"><i data-lucide="scale" class="icon icon-lg"></i><h4>Stay within entrapment lines</h4><p>Observation only. Never solicit, never propose, never agree to a transaction. PECA + procedural law cover this strictly.</p></div>
     </div>
   </div>
-  <div class="footer"><span>Module 7 · Tradecraft & Closing</span><span class="pageno">60 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 7 · Tradecraft & Closing</span><span class="pageno">60 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>HOW TO TIE ONE IDENTITY TO ANOTHER</p><h2 class="title">Attribution chains.</h2>
     <div class="cards cols-3 flex-1">
       <div class="card gold-bar"><i data-lucide="at-sign" class="icon icon-lg"></i><h4>Email reuse</h4><p>Same address across forum, marketplace, social — a single edge in the graph.</p></div><div class="card gold-bar"><i data-lucide="user-search" class="icon icon-lg"></i><h4>Username reuse</h4><p>Sherlock + WhatsMyName surface the recurring handle across 400+ sites.</p></div><div class="card gold-bar"><i data-lucide="phone" class="icon icon-lg"></i><h4>Phone reuse</h4><p>Same number registered to multiple accounts (truecaller-pivot, holehe).</p></div><div class="card gold-bar"><i data-lucide="wallet" class="icon icon-lg"></i><h4>Wallet reuse</h4><p>Same crypto address re-used across scams, tipping, donation pages.</p></div><div class="card gold-bar"><i data-lucide="image" class="icon icon-lg"></i><h4>Profile photo</h4><p>Reverse search a profile pic across multiple platforms.</p></div><div class="card gold-bar"><i data-lucide="hash" class="icon icon-lg"></i><h4>Stylometric</h4><p>Recurring phrases, typos, code-switching patterns in posts.</p></div>
@@ -2549,12 +2476,10 @@ ofac/downloads/sdn.csv -o sdn.csv
       <div><strong>Chain rule:</strong> any single attribution can be coincidence. Two independent attributions are suggestive. Three is a court-defensible identity claim.</div>
     </div>
   </div>
-  <div class="footer"><span>Module 7 · Tradecraft & Closing</span><span class="pageno">61 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 7 · Tradecraft & Closing</span><span class="pageno">61 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>WHERE TO LOOK · WHAT IT REVEALS</p><h2 class="title">Metadata exploitation patterns.</h2>
     <table class="grid">
       <tr><th>Source</th><th>What it reveals</th><th>Why it matters</th></tr>
@@ -2566,12 +2491,10 @@ ofac/downloads/sdn.csv -o sdn.csv
       <tr><td>Crypto wallet history</td><td>First fund tx, behavioural pattern</td><td>Cluster wallets to a single operator</td></tr>
     </table>
   </div>
-  <div class="footer"><span>Module 7 · Tradecraft & Closing</span><span class="pageno">62 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 7 · Tradecraft & Closing</span><span class="pageno">62 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>PIN ABOVE EVERY ANALYST'S DESK</p><h2 class="title">Operational discipline checklist.</h2>
     <div class="two-col">
       <div class="col">
@@ -2598,12 +2521,10 @@ ofac/downloads/sdn.csv -o sdn.csv
       <div><strong>The discipline IS the case.</strong> A perfect finding from a contaminated environment is inadmissible. A modest finding from a clean one is bullet-proof.</div>
     </div>
   </div>
-  <div class="footer"><span>Module 7 · Tradecraft & Closing</span><span class="pageno">63 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 7 · Tradecraft & Closing</span><span class="pageno">63 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>FROM ZERO TO CONFIDENT INVESTIGATOR</p><h2 class="title">A 90-day learning path.</h2><div class="subtitle">One concept per week. Pick a synthetic target on day one. Run every new technique against it.</div>
     <div class="cards cols-3 flex-1">
       <div class="card gold-bar">
@@ -2630,12 +2551,10 @@ ofac/downloads/sdn.csv -o sdn.csv
       <div>By day 90, you are the OSINT person in your unit. Companion <a href="OSINT-Lecture-NAB-PACA-28Apr2026-Speaker-Notes.pdf" target="_blank" rel="noopener">speaker manual</a> has the full week-by-week plan.</div>
     </div>
   </div>
-  <div class="footer"><span>Module 7 · Tradecraft & Closing</span><span class="pageno">64 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 7 · Tradecraft & Closing</span><span class="pageno">64 / 67</span></div></div></section>
 
 
-<section class="slide">
-  <div class="body">
+<section class="slide"><div class="frame"><div class="body">
     <p class="kicker"><span class="dot"></span>A STARTER LIBRARY</p><h2 class="title">Resources &amp; further reading.</h2>
     <div class="cards cols-3 flex-1">
       <div class="card">
@@ -2696,23 +2615,19 @@ ofac/downloads/sdn.csv -o sdn.csv
       </div>
     </div>
   </div>
-  <div class="footer"><span>Module 7 · Tradecraft & Closing</span><span class="pageno">65 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 7 · Tradecraft & Closing</span><span class="pageno">65 / 67</span></div></div></section>
 
 
-<section class="slide theme-dark">
-  <div class="closing">
+<section class="slide theme-dark"><div class="frame"><div class="closing">
     <div style="color:var(--accent);font-weight:700;letter-spacing:5px;font-size:14px;margin-bottom:24px;">CLOSING THOUGHT</div>
     <h1>Twenty minutes.<br>Free.<br>Every case.</h1>
     <div class="gold-bar"></div>
     <div class="sub">OSINT is the cheapest force-multiplier in investigative work.<br>The investigator's edge is method, not access. Start tomorrow morning.</div>
   </div>
-  <div class="footer"><span>Module 7 · Tradecraft & Closing</span><span class="pageno">66 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 7 · Tradecraft & Closing</span><span class="pageno">66 / 67</span></div></div></section>
 
 
-<section class="slide theme-dark">
-  <div class="closing">
+<section class="slide theme-dark"><div class="frame"><div class="closing">
     <div style="color:var(--accent);font-weight:700;letter-spacing:5px;font-size:14px;margin-bottom:24px;">THANK YOU</div>
     <h1>Questions?</h1>
     <div class="gold-bar"></div>
@@ -2722,8 +2637,7 @@ ofac/downloads/sdn.csv -o sdn.csv
     </div>
     <div style="margin-top:36px;color:var(--accent);font-weight:700;letter-spacing:1px;">PACA · NAB HQ Islamabad · 28 April 2026</div>
   </div>
-  <div class="footer"><span>Module 7 · Tradecraft & Closing</span><span class="pageno">67 / 67</span></div>
-</section>
+  <div class="footer"><span>Module 7 · Tradecraft & Closing</span><span class="pageno">67 / 67</span></div></div></section>
 
   </div>
 </div>
